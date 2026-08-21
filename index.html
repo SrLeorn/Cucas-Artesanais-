@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cucas &mdash; Controle de Pedidos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ TOAST CONTAINER ============ -->
+<div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+<!-- ============ APP SHELL ============ -->
+<div class="app">
+
+  <!-- ---------- SIDEBAR (desktop) / TOP BAR (mobile handled via CSS) ---------- -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="34" height="34">
+          <path d="M24 4c9 0 16 6 16 15 0 3-1 5-3 7 2 1 3 4 3 7 0 9-7 15-16 15S8 42 8 33c0-3 1-6 3-7-2-2-3-4-3-7C8 10 15 4 24 4z" fill="none" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M13 22c3-2 6-2 9 0s6 2 9 0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M13 29c3-2 6-2 9 0s6 2 9 0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <div class="brand-text">
+        <span class="brand-title">Cucas</span>
+        <span class="brand-sub">controle de pedidos</span>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Navegação principal">
+      <button class="nav-item is-active" data-view="dashboard" type="button">
+        <svg viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-view="pedidos" type="button">
+        <svg viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M4 4h16v3H4V4zm0 6.5h16v3H4v-3zM4 17h16v3H4v-3z"/></svg>
+        <span>Pedidos</span>
+      </button>
+      <button class="nav-item" data-view="produtos" type="button">
+        <svg viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        <span>Produtos</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p class="sidebar-hint">Backup dos dados</p>
+      <button id="btnExport" class="btn btn-ghost btn-small" type="button">Exportar JSON</button>
+      <label class="btn btn-ghost btn-small" for="fileImport">Importar JSON</label>
+      <input id="fileImport" type="file" accept="application/json" hidden>
+    </div>
+  </aside>
+
+  <!-- ---------- MOBILE TAB BAR ---------- -->
+  <nav class="mobile-tabbar" aria-label="Navegação móvel">
+    <button class="tab-item is-active" data-view="dashboard" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="tab-item" data-view="pedidos" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 4h16v3H4V4zm0 6.5h16v3H4v-3zM4 17h16v3H4v-3z"/></svg>
+      <span>Pedidos</span>
+    </button>
+    <button class="tab-item" data-view="produtos" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <span>Produtos</span>
+    </button>
+  </nav>
+
+  <!-- ---------- MAIN CONTENT ---------- -->
+  <main class="main">
+
+    <!-- ===================== DASHBOARD VIEW ===================== -->
+    <section id="view-dashboard" class="view is-active">
+      <header class="view-header">
+        <div>
+          <h1>Dashboard</h1>
+          <p class="view-sub">Resumo geral dos pedidos de cucas</p>
+        </div>
+        <span id="todayLabel" class="today-chip"></span>
+      </header>
+
+      <div class="cards-grid">
+        <!-- Hero ticket: Total a Receber -->
+        <div class="ticket ticket-hero">
+          <div class="ticket-eyebrow">Total a receber</div>
+          <div class="ticket-value" id="statTotalReceber">R$ 0,00</div>
+          <div class="ticket-note">Aguardando + Devendo</div>
+        </div>
+
+        <div class="ticket">
+          <div class="ticket-eyebrow">Total já pago</div>
+          <div class="ticket-value ticket-value--sm" id="statTotalPago">R$ 0,00</div>
+        </div>
+
+        <div class="ticket">
+          <div class="ticket-eyebrow">Total de pedidos</div>
+          <div class="ticket-value ticket-value--sm" id="statTotalPedidos">0</div>
+        </div>
+
+        <div class="ticket ticket-status ticket-status--wait">
+          <div class="ticket-eyebrow">Aguardando</div>
+          <div class="ticket-value ticket-value--sm" id="statAguardando">0</div>
+        </div>
+
+        <div class="ticket ticket-status ticket-status--late">
+          <div class="ticket-eyebrow">Atrasados</div>
+          <div class="ticket-value ticket-value--sm" id="statAtrasados">0</div>
+        </div>
+
+        <div class="ticket ticket-status ticket-status--debt">
+          <div class="ticket-eyebrow">Devendo</div>
+          <div class="ticket-value ticket-value--sm" id="statDevendo">0</div>
+        </div>
+
+        <div class="ticket ticket-status ticket-status--paid">
+          <div class="ticket-eyebrow">Pagos</div>
+          <div class="ticket-value ticket-value--sm" id="statPagos">0</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Pedidos em atraso</h2>
+          <p class="panel-sub">Aguardando há mais de 7 dias da entrega</p>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="tableAtrasados">
+            <thead>
+              <tr><th>Nº</th><th>Nome</th><th>Sabor</th><th class="col-num">Valor</th><th>Entrega</th><th>Dias em atraso</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="empty-note" id="emptyAtrasados" hidden>Nenhum pedido em atraso no momento.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PEDIDOS VIEW ===================== -->
+    <section id="view-pedidos" class="view">
+      <header class="view-header">
+        <div>
+          <h1>Pedidos</h1>
+          <p class="view-sub">Cadastro e acompanhamento dos pedidos</p>
+        </div>
+        <button class="btn btn-primary" id="btnNovoPedido" type="button">+ Novo pedido</button>
+      </header>
+
+      <div class="toolbar">
+        <input type="search" id="pedidoSearch" class="input" placeholder="Buscar por nome ou sabor...">
+        <select id="filterStatus" class="input select">
+          <option value="">Status: todos</option>
+          <option value="AGUARDANDO">Aguardando</option>
+          <option value="PAGO">Pago</option>
+          <option value="DEVENDO">Devendo</option>
+        </select>
+        <select id="filterTamanho" class="input select">
+          <option value="">Tamanho: todos</option>
+          <option value="PEQUENA">Pequena (350G)</option>
+          <option value="GRANDE">Grande (750G)</option>
+        </select>
+        <select id="sortPedidos" class="input select">
+          <option value="numero_desc">Mais recentes primeiro</option>
+          <option value="numero_asc">Nº crescente</option>
+          <option value="nome_asc">Nome (A-Z)</option>
+          <option value="entrega_asc">Entrega (mais próxima)</option>
+        </select>
+      </div>
+
+      <div class="panel">
+        <div class="table-wrap">
+          <table class="data-table" id="tablePedidos">
+            <thead>
+              <tr>
+                <th>Nº</th><th>Nome</th><th>Sabor</th><th class="col-num">Valor</th>
+                <th>Tamanho</th><th>Pedido</th><th>Entrega</th><th>Pagamento</th><th class="col-actions">Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="empty-note" id="emptyPedidos" hidden>Nenhum pedido cadastrado ainda. Clique em "+ Novo pedido" para começar.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PRODUTOS VIEW ===================== -->
+    <section id="view-produtos" class="view">
+      <header class="view-header">
+        <div>
+          <h1>Produtos</h1>
+          <p class="view-sub">Cadastro dos sabores e valores</p>
+        </div>
+        <button class="btn btn-primary" id="btnNovoProduto" type="button">+ Novo produto</button>
+      </header>
+
+      <div class="toolbar">
+        <input type="search" id="produtoSearch" class="input" placeholder="Buscar produto...">
+      </div>
+
+      <div class="panel">
+        <div class="table-wrap">
+          <table class="data-table" id="tableProdutos">
+            <thead>
+              <tr><th>COD</th><th>Produto</th><th class="col-num">Valor</th><th class="col-actions">Ações</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="empty-note" id="emptyProdutos" hidden>Nenhum produto cadastrado ainda.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ MODAL: PEDIDO FORM ============ -->
+<div class="modal-overlay" id="modalPedido" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalPedidoTitle">
+    <div class="modal-header">
+      <h2 id="modalPedidoTitle">Novo pedido</h2>
+      <button class="modal-close" type="button" data-close-modal>&times;</button>
+    </div>
+    <form id="formPedido" class="modal-body" novalidate>
+      <input type="hidden" id="pedidoId">
+
+      <label class="field">
+        <span>Nome do cliente *</span>
+        <input type="text" id="pedidoNome" class="input" required placeholder="Ex.: Claiton (Bar Essencial)">
+      </label>
+
+      <label class="field">
+        <span>Sabor / produto *</span>
+        <select id="pedidoSabor" class="input select" required>
+          <option value="">Selecione um produto...</option>
+        </select>
+      </label>
+
+      <div class="field-row">
+        <div class="field">
+          <span>Valor</span>
+          <input type="text" id="pedidoValorPreview" class="input" disabled placeholder="—">
+        </div>
+        <div class="field">
+          <span>Tamanho</span>
+          <input type="text" id="pedidoTamanhoPreview" class="input" disabled placeholder="—">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Data do pedido *</span>
+          <input type="date" id="pedidoDataPedido" class="input" required>
+        </label>
+        <label class="field">
+          <span>Data da entrega</span>
+          <input type="date" id="pedidoDataEntrega" class="input">
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Pagamento</span>
+        <select id="pedidoPagamento" class="input select">
+          <option value="AGUARDANDO">Aguardando</option>
+          <option value="PAGO">Pago</option>
+          <option value="DEVENDO">Devendo</option>
+        </select>
+      </label>
+
+      <p class="field-hint" id="pedidoFormError" role="alert"></p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar pedido</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ MODAL: PRODUTO FORM ============ -->
+<div class="modal-overlay" id="modalProduto" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalProdutoTitle">
+    <div class="modal-header">
+      <h2 id="modalProdutoTitle">Novo produto</h2>
+      <button class="modal-close" type="button" data-close-modal>&times;</button>
+    </div>
+    <form id="formProduto" class="modal-body" novalidate>
+      <input type="hidden" id="produtoId">
+
+      <label class="field">
+        <span>Código</span>
+        <input type="text" id="produtoCod" class="input" placeholder="Gerado automaticamente se vazio">
+      </label>
+
+      <label class="field">
+        <span>Nome do produto *</span>
+        <input type="text" id="produtoNome" class="input" required placeholder="Ex.: Coco 350G">
+      </label>
+
+      <label class="field">
+        <span>Valor (R$) *</span>
+        <input type="text" id="produtoValor" class="input" required placeholder="Ex.: 12,00" inputmode="decimal">
+      </label>
+
+      <p class="field-hint" id="produtoFormError" role="alert"></p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar produto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ MODAL: CONFIRMAÇÃO ============ -->
+<div class="modal-overlay" id="modalConfirm" hidden>
+  <div class="modal modal-confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal-header">
+      <h2 id="confirmTitle">Confirmar ação</h2>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMessage">Tem certeza?</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmActionBtn">Excluir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
